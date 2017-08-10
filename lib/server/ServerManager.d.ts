@@ -7,6 +7,8 @@ export interface ServerConfiguration {
     serverUrl?: string;
     libraryLoaderPath?: string;
     localDBPath?: string;
+    liveReload?: boolean;
+    liveReloadPath?: string;
 }
 export interface ServerManager {
     start(config: ServerConfiguration): any;
