@@ -5,6 +5,9 @@ import {ServiceBridge} from "../../services/ServiceBridge";
 import {NativeStorage} from "../../../lib/services/storage/NativeStorage";
 import {NativeStorageFactory} from "../../services/storage/NativeStorage";
 import {DEStorageFactory} from "../../services/storage/DEStorage";
+const reload = require('require-reload')(require);
+const chokidar = require('chokidar');
+
 //global declare
 declare let Controller
 /**
@@ -16,6 +19,7 @@ export class MockConnector implements MotifConnector{
     private mockStub:MockApp;
     private libraryLoader:LibraryLoader;
     private useAsyncResponse:boolean
+    private fileWatcher:any
     constructor(mockFilePath:string,config:ServerConfiguration){
         this.mockFilePath = mockFilePath;
         this.useAsyncResponse = config.useAsyncMockResponse;
@@ -23,7 +27,7 @@ export class MockConnector implements MotifConnector{
     }
 
     init(config:ServerConfiguration){
-        let moduleValue = require(this.mockFilePath);
+        let moduleValue = reload(this.mockFilePath);
         if(!Controller || !Controller.mock ){
             throw new Error("Load module fail: Controller is undefined or Controller.mock is undefined");
         }
@@ -31,6 +35,22 @@ export class MockConnector implements MotifConnector{
         this.loadLibraryLoader(config);
         this.mockStub.appStarted();
         console.log("Load module for %s - %s ",this.mockStub.appDomain(),this.mockStub.appName());
+        if(config.liveReload && !this.fileWatcher){
+            this.fileWatcher = chokidar.watch(config.liveReloadPath || this.mockFilePath, 'file', {
+                ignored: /[\/\\]\./,
+                persistent: true
+            });
+            this.fileWatcher.on('change', path => this.reloadAll(path,config));
+        }
+    }
+
+    private reloadAll(path:string,config:ServerConfiguration){
+        console.log("Reload....")
+        Controller = null;
+        this.mockStub = null;
+        this.libraryLoader = null;
+        this.init(config);
+        console.log("Reload done....")
     }
 
     private loadLibraryLoader(config:ServerConfiguration) {
@@ -38,8 +58,8 @@ export class MockConnector implements MotifConnector{
             return
         }
         const serviceBridge:ServiceBridge = this.createServiceBridge(config);
-        this.libraryLoader=require(config.libraryLoaderPath);
-        this.libraryLoader(null,serviceBridge);
+        this.libraryLoader=reload(config.libraryLoaderPath);
+        this.libraryLoader(reload,serviceBridge);
     }
 
 
@@ -74,6 +94,10 @@ export class MockConnector implements MotifConnector{
         Controller = null;
         this.mockStub = null;
         this.libraryLoader = null;
+        if(this.fileWatcher){
+            this.fileWatcher.close();
+            this.fileWatcher = null;
+        }
     }
 
 

@@ -10,8 +10,10 @@ export declare class MockConnector implements MotifConnector {
     private mockStub;
     private libraryLoader;
     private useAsyncResponse;
+    private fileWatcher;
     constructor(mockFilePath: string, config: ServerConfiguration);
     init(config: ServerConfiguration): void;
+    private reloadAll(path, config);
     private loadLibraryLoader(config);
     sendRequest(motifRequest: MotifRequest): Promise<MotifResponse>;
     clear(): void;
