@@ -15,8 +15,10 @@ export class MockConnector implements MotifConnector{
     private mockFilePath:string;
     private mockStub:MockApp;
     private libraryLoader:LibraryLoader;
+    private useAsyncResponse:boolean
     constructor(mockFilePath:string,config:ServerConfiguration){
         this.mockFilePath = mockFilePath;
+        this.useAsyncResponse = config.useAsyncMockResponse;
         this.init(config);
     }
 
@@ -54,11 +56,16 @@ export class MockConnector implements MotifConnector{
             if(!serviceOperation){
                 throw new Error("OPERATION_NOT_FOUND");
             }
-            let result:MotifResponse = serviceOperation(motifRequest);
-            if(!result){
-                throw new Error("NULL_RESULT");
+            if(this.useAsyncResponse){
+                serviceOperation(motifRequest,resolve,reject);
+            }else{
+                let result:MotifResponse = serviceOperation(motifRequest);
+                if(!result){
+                    throw new Error("NULL_RESULT");
+                }
+                resolve(result);
             }
-            resolve(result);
+
         });
 
     }

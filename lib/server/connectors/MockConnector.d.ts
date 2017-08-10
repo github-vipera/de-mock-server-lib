@@ -9,6 +9,7 @@ export declare class MockConnector implements MotifConnector {
     private mockFilePath;
     private mockStub;
     private libraryLoader;
+    private useAsyncResponse;
     constructor(mockFilePath: string, config: ServerConfiguration);
     init(config: ServerConfiguration): void;
     private loadLibraryLoader(config);

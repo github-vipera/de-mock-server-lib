@@ -6,6 +6,7 @@ import {MotifConnector, MotifConnectorFactory} from "./connectors/MotifConnector
 export interface ServerConfiguration{
     port:number
     isMockEnabled?:boolean
+    useAsyncMockResponse?:boolean
     mockModulePath?:string
     connectionTimeout?:number
     serverUrl?:string
