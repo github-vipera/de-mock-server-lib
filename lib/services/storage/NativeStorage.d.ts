@@ -8,5 +8,5 @@ export declare class NativeStorageConfig {
     dbPath: string;
 }
 export declare class NativeStorageFactory {
-    getNativeStorage(config: NativeStorageConfig): NativeStorage;
+    static getNativeStorage(config: NativeStorageConfig): NativeStorage;
 }

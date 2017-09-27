@@ -2,7 +2,7 @@ import {MotifConnector} from "./MotifConnector";
 import {MotifRequest, MotifResponse} from "../MotifModels";
 import {ServerConfiguration} from "../ServerManager";
 import {ServiceBridge} from "../../services/ServiceBridge";
-import {NativeStorage} from "../../../lib/services/storage/NativeStorage";
+import {NativeStorage} from "../../services/storage/NativeStorage";
 import {NativeStorageFactory} from "../../services/storage/NativeStorage";
 import {DEStorageFactory} from "../../services/storage/DEStorage";
 const reload = require('require-reload')(require);
