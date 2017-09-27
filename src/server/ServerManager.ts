@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import * as bodyParser from "body-parser";
 import {MotifRequest, MotifResponse} from "./MotifModels";
 import {MotifConnector, MotifConnectorFactory} from "./connectors/MotifConnector";
+const cors = require('cors')
 export interface ServerConfiguration{
     port:number
     isMockEnabled?:boolean
@@ -82,6 +83,7 @@ class ServerManagerImpl implements ServerManager{
     private initExpressApp() {
         console.log("initExpressApp");
         this.app=express();
+        this.app.use(cors());
         this.app.use(bodyParser.json());
         this.app.post('/json',this.handleIncomingRequest.bind(this))
     }
