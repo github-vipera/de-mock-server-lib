@@ -4,3 +4,4 @@
 
 export * from './server/ServerManager'
 export * from './server/MotifModels'
+export * from './logging/LoggerTransport'

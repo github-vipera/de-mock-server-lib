@@ -15,6 +15,6 @@ export class MotifConnectorFactory {
         if(config.isMockEnabled){
             return new MockConnector(config.mockModulePath,config);
         }
-        return new HttpConnector(config.serverUrl);
+        return new HttpConnector(config.serverUrl,config);
     }
 }
