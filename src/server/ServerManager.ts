@@ -3,6 +3,8 @@ import { NextFunction, Request, Response } from "express";
 import * as bodyParser from "body-parser";
 import {MotifRequest, MotifResponse} from "./MotifModels";
 import {MotifConnector, MotifConnectorFactory} from "./connectors/MotifConnector";
+import { LoggerTransport } from "../logging/LoggerTransport";
+import { ConsoleTransport } from "../logging/ConsoleTransport";
 const cors = require('cors')
 export interface ServerConfiguration{
     port:number
@@ -15,6 +17,7 @@ export interface ServerConfiguration{
     localDBPath?:string
     liveReload?:boolean
     liveReloadPath?:string
+    loggerTransport?:LoggerTransport
 }
 
 export interface ServerManager{
@@ -30,8 +33,10 @@ class ServerManagerImpl implements ServerManager{
     connector:MotifConnector;
     sockets = {};
     test:number = 0;
+    logger:LoggerTransport;
     constructor(){}
     public start(config:ServerConfiguration) {
+        this.initLogger(config);
         if(!this.app){
             this.initExpressApp();
         }
@@ -43,11 +48,11 @@ class ServerManagerImpl implements ServerManager{
             // Add a newly connected socket
             var socketId = ServerManagerImpl.nextSocketId++;
             this.sockets[socketId] = socket;
-            console.log('socket', socketId, 'opened');
+            this.logger.info('socket', socketId, 'opened');
 
             // Remove the socket when it closes
             socket.on('close',  () => {
-                console.log('socket', socketId, 'closed');
+                this.logger.info('socket', socketId, 'closed');
                 delete this.sockets[socketId];
             });
 
@@ -55,14 +60,14 @@ class ServerManagerImpl implements ServerManager{
         });
 
         this.http.listen(config.port, () => {
-            console.log(("App is running at http://localhost:%d "), config.port)
+            this.logger.info(("App is running at http://localhost:%d "), config.port)
         });
     }
     public stop():Promise<any> {
         return new Promise((resolve,reject) => {
             if(this.http){
                 this.http.close(() => {
-                    console.log("closed");
+                    this.logger.info("closed");
                     resolve();
                 })
 
@@ -81,7 +86,7 @@ class ServerManagerImpl implements ServerManager{
     }
 
     private initExpressApp() {
-        console.log("initExpressApp");
+        this.logger.info("initExpressApp");
         this.app=express();
         this.app.use(cors());
         this.app.use(bodyParser.json());
@@ -95,22 +100,22 @@ class ServerManagerImpl implements ServerManager{
      * @param next
      */
     private  handleIncomingRequest(req: Request, res: Response, next: NextFunction){
-        console.log("handleIncomingRequest");
+        this.logger.info("handleIncomingRequest");
         let motifRequest:MotifRequest = this.getMotifRequest(req);
-        console.log('motifRequest:',motifRequest);
+        this.logger.info('motifRequest:',motifRequest);
         this.processRequest(motifRequest, req,res);
     }
 
     private processRequest(motifRequest:MotifRequest, req: Request, res: Response) {
         this.connector.sendRequest(motifRequest).then((motifResponse:MotifResponse) => {
-            console.log("Send %s to client",JSON.stringify(motifResponse));
+            this.logger.info("Send %s to client",JSON.stringify(motifResponse));
             res.send(motifResponse);
             res.end();
         }, (err) => {
-            console.error("err:",err);
+            this.logger.error("err:",err);
             this.sendError(err,res);
         }).catch((err) => {
-            console.error("err:",err);
+            this.logger.error("err:",err);
             this.sendError(err,res);
         });
     }
@@ -125,7 +130,7 @@ class ServerManagerImpl implements ServerManager{
     }
 
     private initConnector(config:ServerConfiguration) {
-        console.log("initProcessor");
+        this.logger.info("initProcessor");
         this.connector = MotifConnectorFactory.createConnector(config);
     }
 
@@ -134,6 +139,14 @@ class ServerManagerImpl implements ServerManager{
             'ERROR_CODE':'GENERIC_MOCK_ERROR',
             'ERROR_MESSAGE': message || 'An error has occurred'
         };
+    }
+
+    private initLogger(config:ServerConfiguration){
+        if(config.loggerTransport){
+            this.logger = config.loggerTransport;
+        }else{
+            this.logger = new ConsoleTransport();
+        }
     }
 
 }

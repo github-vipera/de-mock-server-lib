@@ -5,6 +5,8 @@ import {ServiceBridge} from "../../services/ServiceBridge";
 import {NativeStorage} from "../../services/storage/NativeStorage";
 import {NativeStorageFactory} from "../../services/storage/NativeStorage";
 import {DEStorageFactory} from "../../services/storage/DEStorage";
+import { LoggerTransport } from "../../logging/LoggerTransport";
+import { ConsoleTransport } from "../../logging/ConsoleTransport";
 const reload = require('require-reload')(require);
 const chokidar = require('chokidar');
 
@@ -20,6 +22,8 @@ export class MockConnector implements MotifConnector{
     private libraryLoader:LibraryLoader;
     private useAsyncResponse:boolean
     private fileWatcher:any
+    private logger:LoggerTransport;
+
     constructor(mockFilePath:string,config:ServerConfiguration){
         this.mockFilePath = mockFilePath;
         this.useAsyncResponse = config.useAsyncMockResponse;
@@ -27,6 +31,7 @@ export class MockConnector implements MotifConnector{
     }
 
     init(config:ServerConfiguration){
+        this.initLogger(config);
         let moduleValue = reload(this.mockFilePath);
         if(!Controller || !Controller.mock ){
             throw new Error("Load module fail: Controller is undefined or Controller.mock is undefined");
@@ -34,7 +39,7 @@ export class MockConnector implements MotifConnector{
         this.mockStub = Controller.mock;
         this.loadLibraryLoader(config);
         this.mockStub.appStarted();
-        console.log("Load module for %s - %s ",this.mockStub.appDomain(),this.mockStub.appName());
+        this.logger.info("Load module for %s - %s ",this.mockStub.appDomain(),this.mockStub.appName());
         if(config.liveReload && !this.fileWatcher){
             this.fileWatcher = chokidar.watch(config.liveReloadPath || this.mockFilePath, 'file', {
                 ignored: /[\/\\]\./,
@@ -44,13 +49,21 @@ export class MockConnector implements MotifConnector{
         }
     }
 
+    private initLogger(config:ServerConfiguration){
+        if(config.loggerTransport){
+            this.logger = config.loggerTransport;
+        }else{
+            this.logger = new ConsoleTransport();
+        }
+    }
+
     private reloadAll(path:string,config:ServerConfiguration){
-        console.log("Reload....")
+        this.logger.info("Reload....")
         Controller = null;
         this.mockStub = null;
         this.libraryLoader = null;
         this.init(config);
-        console.log("Reload done....")
+        this.logger.info("Reload done....")
     }
 
     private loadLibraryLoader(config:ServerConfiguration) {
@@ -106,7 +119,7 @@ export class MockConnector implements MotifConnector{
         let localStorage = DEStorageFactory.getDEStorage();
         serviceBridge.addService('localStorage',localStorage);
         if(config.localDBPath){
-            console.log("load db service");
+            this.logger.info("load db service");
             let dbstorage:NativeStorage = NativeStorageFactory.getNativeStorage({ dbPath:config.localDBPath});
             serviceBridge.addService('nativeStorage',dbstorage);
         }

@@ -1,3 +1,4 @@
+import { LoggerTransport } from "../logging/LoggerTransport";
 export interface ServerConfiguration {
     port: number;
     isMockEnabled?: boolean;
@@ -9,6 +10,7 @@ export interface ServerConfiguration {
     localDBPath?: string;
     liveReload?: boolean;
     liveReloadPath?: string;
+    loggerTransport?: LoggerTransport;
 }
 export interface ServerManager {
     start(config: ServerConfiguration): any;
